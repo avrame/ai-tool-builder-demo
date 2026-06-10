@@ -14,18 +14,21 @@ export const messagesState = reactive<{
 
 export async function sendMessage(message: UserMessage) {
   messagesState.messages.push(message);
-  const response = await fetch("http://127.0.0.1:4000/ai/sendMessage", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await fetch(
+    `${import.meta.env.VITE_AI_CHAT_HOST}/ai/sendMessage`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messages: messagesState.messages.map((m) =>
+          m.sandboxSource === undefined
+            ? m
+            : { ...m, content: "AI built the tool.", sandboxSource: undefined },
+        ),
+      }),
     },
-    body: JSON.stringify({
-      messages: messagesState.messages.map((m) =>
-        m.sandboxSource === undefined
-          ? m
-          : { ...m, content: "AI built the tool.", sandboxSource: undefined },
-      ),
-    }),
-  });
+  );
   return response.json();
 }
