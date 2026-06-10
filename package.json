@@ -16,7 +16,8 @@
     "@arrow-js/framework": "^1.0.6",
     "@arrow-js/hydrate": "^1.0.6",
     "@arrow-js/sandbox": "^1.0.6",
-    "@arrow-js/ssr": "^1.0.6"
+    "@arrow-js/ssr": "^1.0.6",
+    "@netlify/vite-plugin": "^2.12.7"
   },
   "devDependencies": {
     "@arrow-js/skill": "^1.0.6",
