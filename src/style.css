@@ -59,6 +59,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow: scroll;
   > div {
     padding: 20px;
     border: 1px solid var(--border);

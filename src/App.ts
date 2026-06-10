@@ -1,188 +1,69 @@
-import { component, html, reactive } from "@arrow-js/core";
+import { component, html, watch } from "@arrow-js/core";
+
+import { sendMessage, messagesState, UserMessage } from "./send-message";
+
 let sandboxImport: any;
-let conversationId: string;
 
-type LMStudioResponse = {
-  id: string;
-  object: "response";
-  created_at: number;
-  completed_at: number;
-  status: "completed" | "pending";
-  model: string;
-  previous_response_id: null | string;
-  instructions: null;
-  output: LMOutput[];
-};
-
-type LMOutputType = "message" | "reasoning" | "function_call";
-type LMRole = "user" | "assistant";
-
-type LMOutput = {
-  id: string;
-  type: LMOutputType;
-  role: LMRole;
-  status: "completed" | "pending";
-  content?: LMContent[];
-  arguments?: LMArguments[];
-};
-
-type LMContent = {
-  type: "reasoning_text" | "output_text";
-  text: string;
-};
-
-type LMArguments = {
-  source: string;
-};
-
-type ChatMessage = {
-  id: string;
-  type: LMOutputType;
-  role: LMRole;
-  text?: string;
-  source?: string;
-};
-
-const responseState = reactive<{
-  status: string;
-  messages: ChatMessage[];
-}>({
-  status: "",
-  messages: [],
+watch(() => {
+  if (messagesState.messages.length > 0) {
+    setTimeout(() => {
+      const messagesContainer = document.querySelector(".messages");
+      if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+    }, 0);
+  }
 });
 
 const submitMessage = async (e: SubmitEvent) => {
   e.preventDefault();
-  if (!sandboxImport) {
-    sandboxImport = await import("@arrow-js/sandbox");
+
+  const chatMessageTextArea = (e.target as HTMLFormElement).chat_message;
+  const message = chatMessageTextArea.value;
+  chatMessageTextArea.value = "";
+
+  const response = await sendMessage({
+    role: "user",
+    content: message,
+  });
+
+  if (response.content) {
+    messagesState.messages.push({
+      role: "assistant",
+      content: response.content,
+    });
   }
 
-  responseState.status = "loading";
-  const chatMessage = (e.target as HTMLFormElement).chat_message;
-  const message = chatMessage.value;
-  responseState.messages = [
-    ...responseState.messages,
-    {
-      id: new Date().toISOString(),
-      type: "message",
-      role: "user" as const,
-      text: message,
-    },
-  ];
-  chatMessage.value = "";
-  const response = await fetch("http://localhost:1234/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "",
-    },
-    body: JSON.stringify({
-      model: "qwen/qwen3.6-35b-a3b",
-      input: message,
-      previous_response_id: conversationId,
-      tool_choice: "auto",
-      tools: [
-        {
-          type: "function",
-          name: "create_arrow_sandbox",
-          description: "Produce arguments for @arrow-js/sandbox.",
-          parameters: {
-            type: "object",
-            properties: {
-              source: {
-                type: "object",
-                description:
-                  "Virtual files passed to sandbox({ source }). Must include main.ts or main.js. main.css is optional.",
-                additionalProperties: false,
-                properties: {
-                  "main.ts": {
-                    type: "string",
-                    description: "Main Arrow TypeScript entry file.",
-                  },
-                  "main.js": {
-                    type: "string",
-                    description: "Main Arrow JavaScript entry file.",
-                  },
-                  "main.css": {
-                    type: "string",
-                    description: "Optional stylesheet for the sandbox root.",
-                  },
-                },
-                anyOf: [{ required: ["main.ts"] }, { required: ["main.js"] }],
-              },
-              shadowDOM: {
-                type: "boolean",
-                description:
-                  "Whether the sandbox should render inside shadow DOM.",
-              },
-              debug: {
-                type: "boolean",
-                description: "Whether sandbox debug logging should be enabled.",
-              },
-            },
-            required: ["source"],
-          },
-        },
-      ],
-    }),
-  });
-  const data = (await response.json()) as LMStudioResponse;
-  conversationId = data.id;
-  responseState.messages = [
-    ...responseState.messages,
-    ...data.output.map((op: any) => ({
-      id: op.id,
-      type: op.type,
-      role: "assistant" as const,
-      text: op.content?.map((c: any) => c.text).join("\n"),
-      source: op.arguments ? JSON.parse(op.arguments).source : undefined,
-    })),
-  ];
-  responseState.status = response.ok ? "success" : "error";
+  if (response.toolUse?.input?.source) {
+    if (!sandboxImport) {
+      sandboxImport = await import("@arrow-js/sandbox");
+    }
+    messagesState.messages.push({
+      role: "assistant",
+      sandboxSource: response.toolUse.input.source,
+    });
+  }
 };
 
-const Messages = component((messages: ChatMessage[]) => {
-  return html`<div class="messages">
-    ${() =>
-      messages.map((msg: ChatMessage) => {
-        if (msg.type === "message") {
-          return html`${TextMessage(msg)}`.key(msg.id);
-        } else if (msg.type === "function_call") {
-          return html`${FunctionCallMessage(msg)}`.key(msg.id);
-        }
-        return null;
-      })}
-  </div>`;
-});
-
-const TextMessage = component((msg: ChatMessage) => {
-  return html`<div class="${msg.role === "assistant" ? "ai" : "user"}">
-    ${msg.text}
-  </div>`;
-});
-
-const FunctionCallMessage = component((msg: ChatMessage) => {
-  return html`<div class="function-call">
-    ${sandboxImport.sandbox({ source: msg.source })}
-  </div>`;
+const Message = component((message: UserMessage) => {
+  if (message.sandboxSource) {
+    return html`<div>
+      ${sandboxImport.sandbox({ source: message.sandboxSource })}
+    </div>`;
+  }
+  return html`<div>${message.content}</div>`;
 });
 
 export const App = component(() => {
   return html`<main>
-    <h1>Arrow AI Chat</h1>
+    <h1>AI Tool Builder Demo</h1>
     <div class="chat-container">
-      ${() =>
-        responseState.status === "loading"
-          ? html`<section class="loading">Loading...</section>`
-          : null}
-      ${() =>
-        responseState.messages.length > 0
-          ? Messages(responseState.messages)
-          : null}
-      ${() =>
-        responseState.status === "error"
-          ? html`<section class="error">Error</section>`
-          : null}
+      <section class="messages">
+        ${() =>
+          messagesState.messages.map((message) => {
+            return Message(message);
+          })}
+      </section>
       <section class="chat-input">
         <form
           @submit="${(e: SubmitEvent) => {
