@@ -9,7 +9,10 @@ watch(() => {
     setTimeout(() => {
       const messagesContainer = document.querySelector(".messages");
       if (messagesContainer) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        messagesContainer.scrollTo({
+          behavior: "smooth",
+          top: messagesContainer.scrollHeight,
+        });
       }
     }, 0);
   }
@@ -47,11 +50,11 @@ const submitMessage = async (e: SubmitEvent) => {
 
 const Message = component((message: UserMessage) => {
   if (message.sandboxSource) {
-    return html`<div>
+    return html`<div class="tool">
       ${sandboxImport.sandbox({ source: message.sandboxSource })}
     </div>`;
   }
-  return html`<div>${message.content}</div>`;
+  return html`<div class="${message.role}">${message.content}</div>`;
 });
 
 export const App = component(() => {

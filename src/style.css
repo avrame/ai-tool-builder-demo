@@ -1,8 +1,6 @@
 :root {
-  --bg: #09090b;
-  --fg: #fafafa;
-  --border: #27272a;
-  --card: #18181b;
+  --bg: oklch(10% 0% 0);
+  --fg: oklch(90% 0% 0);
 
   color: var(--fg);
   background: var(--bg);
@@ -39,61 +37,63 @@ main {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: stretch;
   align-items: stretch;
   gap: 24px;
   height: 100vh;
-  flex: 0 1 auto;
+}
+
+main > h1 {
+  flex-shrink: 0;
+  margin: 0;
+  padding-top: 24px;
 }
 
 .chat-container {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  height: 100%;
-  flex: 0 1 auto;
-  justify-content: flex-end;
+  flex: 1;
+  min-height: 0;
 }
 
 .messages {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow: scroll;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   > div {
     padding: 20px;
-    border: 1px solid var(--border);
+    border: 1px solid oklch(30% 0% 0);
+    background: oklch(20% 0% 0);
     border-radius: 12px;
-    background: var(--card);
-    &.ai {
+    &.assistant {
       align-self: flex-start;
-      background: lightblue;
-      color: #222;
-      border: 1px solid darkslategray;
+      background: oklch(20% 40% 200);
+      color: oklch(0, 0, 0);
+      border: 1px solid oklch(30% 40% 200);
+      margin-right: 4rem;
     }
     &.user {
       align-self: flex-end;
+      margin-left: 4rem;
     }
-    &.reasoning {
-      color: #888;
+    &.tool {
+      background: oklch(10% 40% 200);
+      border: 1px solid oklch(20% 40% 200);
     }
   }
 }
 
 .chat-input {
+  flex-shrink: 0;
   padding-bottom: 24px;
   textarea {
     padding: 12px;
-    border: 1px solid var(--border);
+    border: 2px solid gray;
     border-radius: 8px;
-    background: lightgrey;
+    background: oklch(100% 0% 0);
     width: 100%;
-  }
-
-  button[type="submit"] {
-    padding: 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    float: right;
   }
 }
