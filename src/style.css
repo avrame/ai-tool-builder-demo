@@ -64,24 +64,35 @@ main > h1 {
   min-height: 0;
   overflow-y: auto;
   > div {
-    padding: 20px;
-    border: 1px solid oklch(30% 0% 0);
-    background: oklch(20% 0% 0);
     border-radius: 12px;
-    &.assistant {
-      align-self: flex-start;
-      background: oklch(20% 40% 200);
-      color: oklch(0, 0, 0);
-      border: 1px solid oklch(30% 40% 200);
-      margin-right: 4rem;
+    &.loading {
+      padding: 20px;
+      border: 1px solid oklch(30% 0% 0);
+      background: oklch(20% 0% 0);
     }
-    &.user {
-      align-self: flex-end;
-      margin-left: 4rem;
+    &.error {
+      color: oklch(80% 0% 0);
+      background: oklch(30% 0% 0);
     }
-    &.tool {
-      background: oklch(10% 40% 200);
-      border: 1px solid oklch(20% 40% 200);
+    &.message {
+      padding: 20px;
+      border: 1px solid oklch(30% 0% 0);
+      background: oklch(20% 0% 0);
+      &.assistant {
+        align-self: flex-start;
+        background: oklch(20% 40% 200);
+        color: oklch(0, 0, 0);
+        border: 1px solid oklch(30% 40% 200);
+        margin-right: 4rem;
+      }
+      &.user {
+        align-self: flex-end;
+        margin-left: 4rem;
+      }
+      &.tool {
+        background: oklch(10% 40% 200);
+        border: 1px solid oklch(20% 40% 200);
+      }
     }
   }
 }
@@ -95,5 +106,38 @@ main > h1 {
     border-radius: 8px;
     background: oklch(100% 0% 0);
     width: 100%;
+  }
+}
+
+/* HTML: <div class="loader"></div> */
+.loader {
+  width: 60px;
+  aspect-ratio: 4;
+  --_g: no-repeat radial-gradient(circle closest-side, #fff 90%, #fff0);
+  background:
+    var(--_g) 0% 50%,
+    var(--_g) 50% 50%,
+    var(--_g) 100% 50%;
+  background-size: calc(100% / 3) 100%;
+  animation: l7 1s infinite linear;
+}
+@keyframes l7 {
+  33% {
+    background-size:
+      calc(100% / 3) 0%,
+      calc(100% / 3) 100%,
+      calc(100% / 3) 100%;
+  }
+  50% {
+    background-size:
+      calc(100% / 3) 100%,
+      calc(100% / 3) 0%,
+      calc(100% / 3) 100%;
+  }
+  66% {
+    background-size:
+      calc(100% / 3) 100%,
+      calc(100% / 3) 100%,
+      calc(100% / 3) 0%;
   }
 }

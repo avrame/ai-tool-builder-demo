@@ -8,27 +8,45 @@ export type UserMessage = {
 
 export const messagesState = reactive<{
   messages: UserMessage[];
+  status?: "loading" | "success" | "error";
+  error?: string;
 }>({
   messages: [],
+  status: undefined,
+  error: undefined,
 });
 
 export async function sendMessage(message: UserMessage) {
+  messagesState.status = "loading";
   messagesState.messages.push(message);
-  const response = await fetch(
-    `${import.meta.env.VITE_AI_CHAT_HOST}/ai/sendMessage`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_AI_CHAT_HOST}/ai/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: messagesState.messages.map((m) =>
+            m.sandboxSource === undefined
+              ? m
+              : {
+                  ...m,
+                  content: "AI built the tool.",
+                  sandboxSource: undefined,
+                },
+          ),
+        }),
       },
-      body: JSON.stringify({
-        messages: messagesState.messages.map((m) =>
-          m.sandboxSource === undefined
-            ? m
-            : { ...m, content: "AI built the tool.", sandboxSource: undefined },
-        ),
-      }),
-    },
-  );
-  return response.json();
+    );
+    messagesState.status = "success";
+    return response.json();
+  } catch (error) {
+    messagesState.status = "error";
+    messagesState.error =
+      error instanceof Error ? error.message : String(error);
+    messagesState.messages.pop();
+    throw error;
+  }
 }

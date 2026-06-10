@@ -4,9 +4,9 @@
   "type": "module",
   "packageManager": "pnpm@10.14.0",
   "scripts": {
-    "dev": "node server.mjs",
-    "build": "vite build && vite build --ssr src/entry-server.ts",
-    "preview": "NODE_ENV=production node server.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "postinstall": "arrow-js-skill install --agent claude --project . --yes"
   },
@@ -17,7 +17,10 @@
     "@arrow-js/hydrate": "^1.0.6",
     "@arrow-js/sandbox": "^1.0.6",
     "@arrow-js/ssr": "^1.0.6",
-    "@netlify/vite-plugin": "^2.12.7"
+    "@netlify/vite-plugin": "^2.12.7",
+    "acorn": "^8.16.0",
+    "magic-string": "^0.30.21",
+    "quickjs-emscripten": "^0.32.0"
   },
   "devDependencies": {
     "@arrow-js/skill": "^1.0.6",

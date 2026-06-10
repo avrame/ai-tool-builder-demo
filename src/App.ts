@@ -1,8 +1,7 @@
 import { component, html, watch } from "@arrow-js/core";
+import { sandbox } from "@arrow-js/sandbox";
 
 import { sendMessage, messagesState, UserMessage } from "./send-message";
-
-let sandboxImport: any;
 
 watch(() => {
   if (messagesState.messages.length > 0) {
@@ -38,9 +37,6 @@ const submitMessage = async (e: SubmitEvent) => {
   }
 
   if (response.toolUse?.input?.source) {
-    if (!sandboxImport) {
-      sandboxImport = await import("@arrow-js/sandbox");
-    }
     messagesState.messages.push({
       role: "assistant",
       sandboxSource: response.toolUse.input.source,
@@ -50,11 +46,13 @@ const submitMessage = async (e: SubmitEvent) => {
 
 const Message = component((message: UserMessage) => {
   if (message.sandboxSource) {
-    return html`<div class="tool">
-      ${sandboxImport.sandbox({ source: message.sandboxSource })}
+    return html`<div class="message tool">
+      ${sandbox({ source: message.sandboxSource })}
     </div>`;
   }
-  return html`<div class="${message.role}">${message.content}</div>`;
+  return html`<div class="${`message ${message.role}`}">
+    ${message.content}
+  </div>`;
 });
 
 export const App = component(() => {
@@ -66,6 +64,15 @@ export const App = component(() => {
           messagesState.messages.map((message) => {
             return Message(message);
           })}
+        ${() => {
+          if (messagesState.status === "loading") {
+            return html`<div class="loader"></div>`;
+          }
+          if (messagesState.status === "error") {
+            return html`<div class="error">Error: ${messagesState.error}</div>`;
+          }
+          return null;
+        }}
       </section>
       <section class="chat-input">
         <form

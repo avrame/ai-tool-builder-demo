@@ -1,22 +1,13 @@
-# example netlify.toml
 [build]
   command = "pnpm run build"
-  functions = "netlify/functions"
   publish = "dist/client"
 
-  [[redirects]]
-    from = "/*"
-    to = "/.netlify/functions/ssr"
-    status = 200
+[dev]
+  command = "pnpm run dev"
+  targetPort = 5173
+  port = 8888
 
-  ## (optional) Settings for Netlify Dev
-  ## https://github.com/netlify/cli/blob/main/docs/netlify-dev.md#project-detection
-  [dev]
-    command = "pnpm run dev" # Command to start your dev server
-    port = 3000 # Port that the dev server will be listening on
-    publish = "dist" # Folder with the static content for _redirect file
-
-  ## more info on configuring this file: https://ntl.fyi/file-based-build-config
-
-[functions]
-  included_files = ["dist/client/index.html"]
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
