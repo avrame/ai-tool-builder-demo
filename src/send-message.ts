@@ -14,7 +14,7 @@ export const messagesState = reactive<{
 
 export async function sendMessage(message: UserMessage) {
   messagesState.messages.push(message);
-  const response = await fetch("http://127.0.0.1:4000/ai/complete", {
+  const response = await fetch("http://127.0.0.1:4000/ai/sendMessage", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
