@@ -9,7 +9,6 @@ import {
   type ModelOption,
   type UserMessage,
 } from "./send-message";
-import { sandbox } from "@arrow-js/sandbox";
 
 // ─── Auto-scroll on new messages ───────────────────────────────────
 watch(() => {
@@ -48,10 +47,21 @@ const handleModelSelect = async (e: Event) => {
 };
 
 // ─── Message Component ─────────────────────────────────────────────
-const Message = component((message: UserMessage) => {
+// Lazy-load sandbox only when needed (not on initial render)
+let sandboxModule: any = null;
+
+async function getSandbox() {
+  if (!sandboxModule) {
+    sandboxModule = await import("@arrow-js/sandbox");
+  }
+  return sandboxModule;
+}
+
+const Message = component(async (message: UserMessage) => {
   if (message.sandboxSource) {
+    const mod = await getSandbox();
     return html`<div class="message tool">
-      ${sandbox({ source: message.sandboxSource })}
+      ${mod.sandbox({ source: message.sandboxSource })}
     </div>`;
   }
   return html`<div class="${`message ${message.role}`}">
@@ -59,11 +69,6 @@ const Message = component((message: UserMessage) => {
     ${() => message.streaming ? html`<span class="streaming-cursor">▊</span>` : null}
   </div>`;
 });
-
-// ─── Render Messages ───────────────────────────────────────────────
-const renderMessages = () => {
-  return messagesState.messages.map((msg: UserMessage) => Message(msg));
-};
 
 // ─── Main App Component ────────────────────────────────────────────
 export const App = component(() => {

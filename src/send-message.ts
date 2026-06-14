@@ -1,5 +1,4 @@
 import { reactive } from "@arrow-js/core";
-import { CreateMLCEngine, MLCEngine, InitProgressReport } from "@mlc-ai/web-llm";
 
 // ─── Model Selection ───────────────────────────────────────────────
 // Models curated for mobile browser inference (q4f16_1 quantized).
@@ -43,13 +42,14 @@ export type UserMessage = {
 
 // ─── Engine State ──────────────────────────────────────────────────
 export const engineState = reactive<{
-  engine: MLCEngine | null;
+  engine: any | null;
   status: "idle" | "checking" | "loading" | "ready" | "error";
   modelId: string | null;
   progress: number;
   progressText: string;
   error: string;
   webgpuSupported: boolean | null;
+  webllmLoaded: boolean;
 }>({
   engine: null,
   status: "idle",
@@ -58,6 +58,7 @@ export const engineState = reactive<{
   progressText: "",
   error: "",
   webgpuSupported: null,
+  webllmLoaded: false,
 });
 
 // ─── Chat State ────────────────────────────────────────────────────
@@ -93,15 +94,28 @@ export async function checkWebGPUSupport(): Promise<boolean> {
   }
 }
 
+// ─── Load WebLLM (lazy) ───────────────────────────────────────────
+async function loadWebLLM(): Promise<typeof import("@mlc-ai/web-llm")> {
+  if (engineState.webllmLoaded) {
+    return await import("@mlc-ai/web-llm");
+  }
+  const mod = await import("@mlc-ai/web-llm");
+  engineState.webllmLoaded = true;
+  return mod;
+}
+
 // ─── Load Model ────────────────────────────────────────────────────
 export async function loadModel(modelId: string): Promise<void> {
   engineState.status = "loading";
   engineState.modelId = modelId;
   engineState.error = "";
   engineState.progress = 0;
-  engineState.progressText = "Initializing...";
+  engineState.progressText = "Loading AI engine...";
 
   try {
+    // Lazy load WebLLM only when user selects a model
+    const { CreateMLCEngine, InitProgressReport } = await loadWebLLM();
+
     engineState.engine = await CreateMLCEngine(modelId, {
       initProgressCallback: (report: InitProgressReport) => {
         engineState.progressText = report.text;
@@ -155,7 +169,7 @@ export async function sendMessage(message: UserMessage): Promise<void> {
     ];
 
     // Stream the response
-    const chunks = await engineState.engine!.chat.completions.create({
+    const chunks = await (engineState.engine as any).chat.completions.create({
       messages: conversation as any,
       stream: true,
       max_tokens: 1024,
