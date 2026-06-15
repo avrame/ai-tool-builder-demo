@@ -31,4 +31,13 @@ if (!root) {
   throw new Error("Unable to find app root element.");
 }
 
-render(root, App());
+render(root, App()).catch((err) => {
+  console.error("Render failed:", err);
+  const app = document.getElementById("app");
+  if (app) {
+    app.innerHTML = `<div style="padding:20px;color:#f88;background:#300;border-radius:8px;margin:16px;">
+      <h2>Render Error</h2>
+      <pre>${err?.message || String(err)}</pre>
+    </div>`;
+  }
+});

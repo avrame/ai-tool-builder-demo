@@ -1,0 +1,6 @@
+appId: com.android.chrome
+---
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: phone-screen-home.png

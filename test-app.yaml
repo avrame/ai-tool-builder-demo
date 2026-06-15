@@ -1,0 +1,19 @@
+appId: com.android.chrome
+---
+# Navigate to the app
+- launchApp
+- tapOn:
+    text: "Search Google or type URL"
+- inputText: "http://192.168.0.12:5173"
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: test-home-screen.png
+
+# Wait for app to load
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: test-app-loaded.png
+
+# Check if the page loaded
+- assertVisible: "AI Tool Builder"

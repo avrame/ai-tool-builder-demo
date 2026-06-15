@@ -114,10 +114,10 @@ export async function loadModel(modelId: string): Promise<void> {
 
   try {
     // Lazy load WebLLM only when user selects a model
-    const { CreateMLCEngine, InitProgressReport } = await loadWebLLM();
+    const { CreateMLCEngine } = await loadWebLLM();
 
     engineState.engine = await CreateMLCEngine(modelId, {
-      initProgressCallback: (report: InitProgressReport) => {
+      initProgressCallback: (report: any) => {
         engineState.progressText = report.text;
         const match = report.text.match(/(\d+)%/);
         if (match) {
