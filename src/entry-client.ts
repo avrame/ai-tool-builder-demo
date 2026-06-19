@@ -1,6 +1,6 @@
 import { render } from "@arrow-js/framework";
 import { App } from "./App";
-import { checkWebGPUSupport } from "./send-message";
+import { checkWebGPUSupport, checkCachedModels } from "./send-message";
 import "./style.css";
 
 // Global error handler to catch and display any JS errors
@@ -25,6 +25,11 @@ checkWebGPUSupport().catch((err) => {
   console.warn("WebGPU check failed:", err);
 });
 
+// Check for cached models (non-blocking)
+checkCachedModels().catch((err) => {
+  console.warn("Cached model check failed:", err);
+});
+
 const root = document.getElementById("app");
 
 if (!root) {
@@ -33,11 +38,13 @@ if (!root) {
 
 render(root, App()).catch((err) => {
   console.error("Render failed:", err);
+  console.error("Stack:", err?.stack);
   const app = document.getElementById("app");
   if (app) {
     app.innerHTML = `<div style="padding:20px;color:#f88;background:#300;border-radius:8px;margin:16px;">
       <h2>Render Error</h2>
       <pre>${err?.message || String(err)}</pre>
+      <details><summary>Stack trace</summary><pre>${err?.stack || 'N/A'}</pre></details>
     </div>`;
   }
 });

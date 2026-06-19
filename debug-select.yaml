@@ -1,0 +1,11 @@
+appId: com.android.chrome
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "AI Tool Builder"
+    timeout: 10000
+- tapOn: "— Select a model —"
+- extendedWaitUntil:
+    visible: "Llama 3.2 1B"
+    timeout: 5000
+- takeScreenshot: dropdown_opened.png
