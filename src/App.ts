@@ -214,11 +214,15 @@ export const App = component(() => {
     </div>`;
   }
 
-  // Build WebGPU unsupported message
+  // Build runtime info (informational — wllama runs on CPU/WASM, no WebGPU needed)
   let webgpuNode: any = null;
   if (engineState.webgpuSupported === false) {
-    webgpuNode = html`<div class="model-error">
-      ⚠ WebGPU not supported on this device. On-device AI requires a modern browser with WebGPU support (Chrome 113+, Edge 113+, Firefox 121+, Safari 17.4+).
+    webgpuNode = html`<div class="model-info">
+      ℹ Running on wllama (CPU/WASM) — no WebGPU required.
+    </div>`;
+  } else if (engineState.webgpuSupported === true) {
+    webgpuNode = html`<div class="model-info">
+      ℹ Running on wllama (CPU/WASM).
     </div>`;
   }
 

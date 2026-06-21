@@ -1,8 +1,0 @@
-appId: com.android.chrome
----
-- tapOn: "192.168.0.12:5173"
-- inputText: "javascript:document.body.innerHTML='<div style=\"padding:20px;color:#f88;background:#300;border-radius:8px;\"><h2>Error Debug</h2><p>Checking for errors...</p><pre id=\"error-output\">Loading...</pre></div>';"
-- pressKey: Enter
-- waitForAnimationToEnd:
-    timeout: 5000
-- takeScreenshot: phone-screen-debug-js.png

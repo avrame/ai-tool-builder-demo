@@ -11,6 +11,10 @@ export default defineConfig({
       key: fs.readFileSync(path.resolve(__dirname, "localhost+3-key.pem")),
       cert: fs.readFileSync(path.resolve(__dirname, "localhost+3.pem")),
     },
+    headers: {
+      "Cross-Origin-Embedder-Policy": "require-corp",
+      "Cross-Origin-Opener-Policy": "same-origin",
+    },
   },
   plugins: [netlify()],
   build: {

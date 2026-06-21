@@ -1,9 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { checkWebGPUSupport, checkCachedModels, resetEngineState, engineState, messagesState } from '../src/send-message';
+import {
+  checkWebGPUSupport,
+  checkCachedModels,
+  resetEngineState,
+  engineState,
+  messagesState,
+  getCachedModelBlob,
+  cacheModelBlob,
+} from '../src/send-message';
 
 describe('engineState / messagesState', () => {
   beforeEach(() => {
-    // Reset state before each test
     resetEngineState();
     messagesState.messages = [];
     messagesState.status = 'idle';
@@ -50,7 +57,6 @@ describe('checkWebGPUSupport', () => {
     expect(result).toBe(false);
     expect(engineState.webgpuSupported).toBe(false);
 
-    // Restore
     if (originalGpu !== undefined) {
       (globalThis as any).navigator.gpu = originalGpu;
     }
@@ -94,29 +100,39 @@ describe('checkWebGPUSupport', () => {
 });
 
 describe('checkCachedModels', () => {
-  it('returns empty array when indexedDB.databases is not available', async () => {
-    Object.defineProperty(globalThis, 'navigator', {
-      value: {},
+  it('returns cached model IDs when model blob exists', async () => {
+    const testBlob = new Blob(['model data'], { type: 'application/octet-stream' });
+    const mockResponse = {
+      blob: vi.fn().mockResolvedValue(testBlob),
+    };
+
+    const mockCache = {
+      open: vi.fn().mockResolvedValue({
+        match: vi.fn().mockResolvedValue(mockResponse),
+      }),
+    };
+
+    Object.defineProperty(globalThis, 'caches', {
+      value: mockCache,
       writable: true,
       configurable: true,
     });
 
     const result = await checkCachedModels();
-    expect(result).toEqual([]);
+    expect(result).toContain('qwen2.5-1.5b-instruct');
+    expect(result).toHaveLength(1);
+    expect(engineState.cachedModels).toEqual(result);
   });
 
-  it('returns empty array when no cached models match', async () => {
-    const mockDatabases = [
-      { name: 'some-other-db', version: 1 },
-      { name: 'another-db', version: 2 },
-    ];
+  it('returns empty array when no cached model exists', async () => {
+    const mockCache = {
+      open: vi.fn().mockResolvedValue({
+        match: vi.fn().mockResolvedValue(null),
+      }),
+    };
 
-    Object.defineProperty(globalThis, 'navigator', {
-      value: {
-        indexedDB: {
-          databases: vi.fn().mockResolvedValue(mockDatabases),
-        },
-      },
+    Object.defineProperty(globalThis, 'caches', {
+      value: mockCache,
       writable: true,
       configurable: true,
     });
@@ -126,55 +142,10 @@ describe('checkCachedModels', () => {
     expect(engineState.cachedModels).toEqual([]);
   });
 
-  it('detects cached models by database name', async () => {
-    const mockDatabases = [
-      { name: 'mlc-ai---Qwen2.5-1.5B-Instruct-q4f16_1-MLC', version: 1 },
-      { name: 'mlc-ai---SmolLM2-1.7B-Instruct-q4f16_1-MLC', version: 1 },
-      { name: 'other-db', version: 1 },
-    ];
-
-    Object.defineProperty(globalThis, 'navigator', {
-      value: {
-        indexedDB: {
-          databases: vi.fn().mockResolvedValue(mockDatabases),
-        },
-      },
-      writable: true,
-      configurable: true,
-    });
-
-    const result = await checkCachedModels();
-    expect(result).toContain('Qwen2.5-1.5B-Instruct-q4f16_1-MLC');
-    expect(result).toContain('SmolLM2-1.7B-Instruct-q4f16_1-MLC');
-    expect(result).not.toContain('Llama-3.2-1B-Instruct-q4f16_1-MLC');
-    expect(engineState.cachedModels).toEqual(result);
-  });
-
-  it('handles database names without model ID gracefully', async () => {
-    const mockDatabases = [
-      { name: 'mlc-ai---UnknownModel', version: 1 },
-    ];
-
-    Object.defineProperty(globalThis, 'navigator', {
-      value: {
-        indexedDB: {
-          databases: vi.fn().mockResolvedValue(mockDatabases),
-        },
-      },
-      writable: true,
-      configurable: true,
-    });
-
-    const result = await checkCachedModels();
-    expect(result).toEqual([]);
-  });
-
   it('returns empty array on error', async () => {
-    Object.defineProperty(globalThis, 'navigator', {
+    Object.defineProperty(globalThis, 'caches', {
       value: {
-        indexedDB: {
-          databases: vi.fn().mockRejectedValue(new Error('DB error')),
-        },
+        open: vi.fn().mockRejectedValue(new Error('Cache error')),
       },
       writable: true,
       configurable: true,
@@ -182,5 +153,124 @@ describe('checkCachedModels', () => {
 
     const result = await checkCachedModels();
     expect(result).toEqual([]);
+  });
+});
+
+describe('model-cache', () => {
+  const CACHE_NAME = 'wllama-models-v1';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('getCachedModelBlob', () => {
+    it('returns null when cache is not available', async () => {
+      Object.defineProperty(globalThis, 'caches', {
+        value: undefined,
+        writable: true,
+        configurable: true,
+      });
+
+      const result = await getCachedModelBlob();
+      expect(result).toBeNull();
+    });
+
+    it('returns null when no cached model exists', async () => {
+      const mockCache = {
+        open: vi.fn().mockResolvedValue({
+          match: vi.fn().mockResolvedValue(null),
+        }),
+      };
+
+      Object.defineProperty(globalThis, 'caches', {
+        value: mockCache,
+        writable: true,
+        configurable: true,
+      });
+
+      const result = await getCachedModelBlob();
+      expect(result).toBeNull();
+      expect(mockCache.open).toHaveBeenCalledWith(CACHE_NAME);
+    });
+
+    it('returns cached blob when model exists in cache', async () => {
+      const testBlob = new Blob(['test model data'], { type: 'application/octet-stream' });
+      const mockResponse = {
+        blob: vi.fn().mockResolvedValue(testBlob),
+      };
+
+      const mockCache = {
+        open: vi.fn().mockResolvedValue({
+          match: vi.fn().mockResolvedValue(mockResponse),
+        }),
+      };
+
+      Object.defineProperty(globalThis, 'caches', {
+        value: mockCache,
+        writable: true,
+        configurable: true,
+      });
+
+      const result = await getCachedModelBlob();
+      expect(result).toBe(testBlob);
+      expect(mockCache.open).toHaveBeenCalledWith(CACHE_NAME);
+    });
+
+    it('returns null on cache error', async () => {
+      const mockCache = {
+        open: vi.fn().mockRejectedValue(new Error('Cache error')),
+      };
+
+      Object.defineProperty(globalThis, 'caches', {
+        value: mockCache,
+        writable: true,
+        configurable: true,
+      });
+
+      const result = await getCachedModelBlob();
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('cacheModelBlob', () => {
+    it('stores blob in cache', async () => {
+      const testBlob = new Blob(['test data'], { type: 'application/octet-stream' });
+      const mockPut = vi.fn().mockResolvedValue(undefined);
+
+      const mockCache = {
+        open: vi.fn().mockResolvedValue({
+          put: mockPut,
+        }),
+      };
+
+      Object.defineProperty(globalThis, 'caches', {
+        value: mockCache,
+        writable: true,
+        configurable: true,
+      });
+
+      await cacheModelBlob(testBlob);
+      expect(mockPut).toHaveBeenCalled();
+      const putRequest = mockPut.mock.calls[0][1];
+      expect(putRequest).toBeInstanceOf(Response);
+    });
+
+    it('uses correct cache name', async () => {
+      const testBlob = new Blob(['test data']);
+      const mockOpen = vi.fn().mockResolvedValue({
+        put: vi.fn().mockResolvedValue(undefined),
+      });
+
+      Object.defineProperty(globalThis, 'caches', {
+        value: {
+          open: mockOpen,
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      await cacheModelBlob(testBlob);
+      expect(mockOpen).toHaveBeenCalledWith(CACHE_NAME);
+    });
   });
 });

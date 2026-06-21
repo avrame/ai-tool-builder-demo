@@ -1,8 +1,0 @@
-appId: com.android.chrome
----
-- tapOn:
-    index: 10
-- inputText: "http://192.168.0.12:5173\n"
-- waitForAnimationToEnd:
-    timeout: 5000
-- takeScreenshot: phone-screen-navigate4.png

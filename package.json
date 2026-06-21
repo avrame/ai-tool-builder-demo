@@ -18,8 +18,8 @@
     "@arrow-js/hydrate": "^1.0.6",
     "@arrow-js/sandbox": "^1.0.6",
     "@arrow-js/ssr": "^1.0.6",
-    "@mlc-ai/web-llm": "^0.2.84",
     "@netlify/vite-plugin": "^2.12.7",
+    "@wllama/wllama": "^3.5.1",
     "acorn": "^8.16.0",
     "magic-string": "^0.30.21",
     "quickjs-emscripten": "^0.32.0"
