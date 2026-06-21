@@ -1,6 +1,34 @@
 import { render } from "@arrow-js/framework";
 import { App } from "./App";
+import { checkWebGPUSupport, checkCachedModels } from "./send-message";
 import "./style.css";
+
+// Global error handler to catch and display any JS errors
+window.addEventListener("error", (e) => {
+  console.error("Uncaught error:", e.error);
+  const app = document.getElementById("app");
+  if (app) {
+    app.innerHTML = `<div style="padding:20px;color:#f88;background:#300;border-radius:8px;margin:16px;">
+      <h2>Application Error</h2>
+      <pre style="white-space:pre-wrap;">${e.error?.message || String(e.error)}</pre>
+      <p>Check the browser console for details.</p>
+    </div>`;
+  }
+});
+
+window.addEventListener("unhandledrejection", (e) => {
+  console.error("Unhandled promise rejection:", e.reason);
+});
+
+// Check WebGPU support (non-blocking — app renders regardless)
+checkWebGPUSupport().catch((err) => {
+  console.warn("WebGPU check failed:", err);
+});
+
+// Check for cached models (non-blocking)
+checkCachedModels().catch((err) => {
+  console.warn("Cached model check failed:", err);
+});
 
 const root = document.getElementById("app");
 
@@ -8,4 +36,15 @@ if (!root) {
   throw new Error("Unable to find app root element.");
 }
 
-render(root, App());
+render(root, App()).catch((err) => {
+  console.error("Render failed:", err);
+  console.error("Stack:", err?.stack);
+  const app = document.getElementById("app");
+  if (app) {
+    app.innerHTML = `<div style="padding:20px;color:#f88;background:#300;border-radius:8px;margin:16px;">
+      <h2>Render Error</h2>
+      <pre>${err?.message || String(err)}</pre>
+      <details><summary>Stack trace</summary><pre>${err?.stack || 'N/A'}</pre></details>
+    </div>`;
+  }
+});

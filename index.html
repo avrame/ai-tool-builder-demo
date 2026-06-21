@@ -17,6 +17,46 @@
     <link rel="manifest" href="/site.webmanifest" />
   </head>
   <body>
+    <!-- Fix for Chrome mobile Map.prototype worker boundary bug -->
+    <script>
+      // Patch Map.prototype to handle "incompatible receiver" errors
+      // This happens on mobile Chrome when Map objects cross Web Worker boundaries
+      (function() {
+        const OrigMap = Map;
+        const origKeys = OrigMap.prototype.keys;
+        const origValues = OrigMap.prototype.values;
+        const origEntries = OrigMap.prototype.entries;
+        const origForEach = OrigMap.prototype.forEach;
+        const origIterator = OrigMap.prototype[Symbol.iterator];
+
+        function safeCall(fn, self, args) {
+          try {
+            return fn.apply(self, args);
+          } catch(e) {
+            if (e && typeof e === 'object' && 'message' in e &&
+                String(e.message).includes('incompatible receiver')) {
+              // Object lost prototype chain across worker boundary
+              // Reconstruct as fresh Map and retry
+              const fresh = new OrigMap();
+              try {
+                // Try Object.entries as fallback
+                for (const k of Object.keys(self)) {
+                  fresh.set(k, self[k]);
+                }
+              } catch(_) {}
+              return fn.apply(fresh, args);
+            }
+            throw e;
+          }
+        }
+
+        OrigMap.prototype.keys = function(...args) { return safeCall(origKeys, this, args); };
+        OrigMap.prototype.values = function(...args) { return safeCall(origValues, this, args); };
+        OrigMap.prototype.entries = function(...args) { return safeCall(origEntries, this, args); };
+        OrigMap.prototype.forEach = function(...args) { return safeCall(origForEach, this, args); };
+        OrigMap.prototype[Symbol.iterator] = function(...args) { return safeCall(origIterator, this, args); };
+      })();
+    </script>
     <div id="app"></div>
     <script type="module" src="/src/entry-client.ts"></script>
   </body>
